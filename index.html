@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>UFC Fight Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--red:#c41e2a;--red-glow:rgba(196,30,42,0.3);--green:#22c55e;--text:#f0f0f0;--text2:#999;--text3:#666}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+.app{max-width:900px;margin:0 auto;padding:20px}
+h1{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:3px;text-align:center;color:var(--red);margin:30px 0 6px}
+.subtitle{text-align:center;color:var(--text2);font-size:.85rem;margin-bottom:30px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.search-row{display:flex;gap:12px;align-items:center;margin-bottom:20px}
+.search-box{flex:1;position:relative}
+.search-box input{width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.95rem;outline:none;transition:border .2s}
+.search-box input:focus{border-color:var(--red)}
+.search-box input::placeholder{color:var(--text3)}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:250px;overflow-y:auto;z-index:99}
+.dropdown-item{padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.9rem;border-bottom:1px solid var(--border)}
+.dropdown-item:hover{background:var(--red);color:#fff}
+.dropdown-item .elo{color:var(--text2);font-size:.8rem}
+.dropdown-item:hover .elo{color:rgba(255,255,255,.7)}
+.vs{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--red);padding:0 4px}
+.prediction{text-align:center;padding:30px 0}
+.fighters-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.fighter-card{flex:1;text-align:center}
+.fighter-name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:1px}
+.fighter-style{color:var(--text2);font-size:.8rem;margin-top:2px}
+.fighter-elo{color:var(--text3);font-size:.75rem;margin-top:2px}
+.prob-bar{display:flex;height:40px;border-radius:8px;overflow:hidden;margin:20px 0;position:relative}
+.prob-fill-a{background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.95rem;transition:width .5s ease}
+.prob-fill-b{background:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.95rem;transition:width .5s ease}
+.winner-call{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:2px;margin:16px 0 8px}
+.winner-conf{color:var(--text2);font-size:.9rem}
+.edge-section{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.edge-title{font-weight:600;margin-bottom:12px;color:var(--text2);font-size:.85rem;text-transform:uppercase;letter-spacing:1px}
+.edge-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem}
+.edge-row:last-child{border:none}
+.edge-label{color:var(--text2)}
+.edge-value{font-weight:600}
+.edge-value.positive{color:var(--green)}
+.edge-value.negative{color:var(--red)}
+.unit-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-weight:700;font-size:.8rem}
+.unit-1{background:rgba(34,197,94,.15);color:var(--green)}
+.unit-2{background:rgba(34,197,94,.25);color:var(--green)}
+.unit-3{background:rgba(34,197,94,.35);color:var(--green)}
+.unit-5{background:rgba(34,197,94,.5);color:var(--green)}
+.no-bet{background:rgba(255,255,255,.05);color:var(--text3)}
+.odds-input{display:flex;gap:12px;margin-top:16px;align-items:center}
+.odds-input label{color:var(--text2);font-size:.85rem;white-space:nowrap}
+.odds-input input{width:100px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.9rem;outline:none;text-align:center}
+.odds-input input:focus{border-color:var(--red)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.stat-card{background:var(--surface2);border-radius:8px;padding:12px;text-align:center}
+.stat-value{font-family:'Bebas Neue',sans-serif;font-size:1.4rem}
+.stat-label{color:var(--text2);font-size:.75rem;margin-top:2px}
+.model-info{text-align:center;color:var(--text3);font-size:.75rem;margin-top:30px;padding:16px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-state h3{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--text2);margin-bottom:8px}
+.loading{text-align:center;padding:40px;color:var(--text2)}
+@media(max-width:600px){
+  .search-row{flex-direction:column}
+  .vs{transform:rotate(90deg);padding:4px 0}
+  .fighters-row{flex-direction:column;gap:16px}
+  .fighter-name{font-size:1.3rem}
+  .odds-input{flex-direction:column;align-items:stretch}
+  h1{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+function App() {
+  const [fighters, setFighters] = useState([]);
+  const [modelInfo, setModelInfo] = useState(null);
+  const [matchups, setMatchups] = useState({});
+  const [fighterA, setFighterA] = useState(null);
+  const [fighterB, setFighterB] = useState(null);
+  const [searchA, setSearchA] = useState("");
+  const [searchB, setSearchB] = useState("");
+  const [showDropA, setShowDropA] = useState(false);
+  const [showDropB, setShowDropB] = useState(false);
+  const [oddsA, setOddsA] = useState("");
+  const [oddsB, setOddsB] = useState("");
+
+  useEffect(() => {
+    fetch("data/fighters.json").then(r => r.json()).then(setFighters).catch(() => {});
+    fetch("data/model_info.json").then(r => r.json()).then(setModelInfo).catch(() => {});
+    fetch("data/matchups.json").then(r => r.json()).then(setMatchups).catch(() => {});
+  }, []);
+
+  const filteredA = useMemo(() => {
+    if (!searchA) return fighters.slice(0, 20);
+    const q = searchA.toLowerCase();
+    return fighters.filter(f => f.name.toLowerCase().includes(q)).slice(0, 15);
+  }, [searchA, fighters]);
+
+  const filteredB = useMemo(() => {
+    if (!searchB) return fighters.slice(0, 20);
+    const q = searchB.toLowerCase();
+    return fighters.filter(f => f.name.toLowerCase().includes(q)).slice(0, 15);
+  }, [searchB, fighters]);
+
+  // Simple prediction from Elo + style matchup
+  const prediction = useMemo(() => {
+    if (!fighterA || !fighterB) return null;
+
+    // Elo-based expected score
+    const eloDiff = fighterA.elo - fighterB.elo;
+    let eloProb = 1 / (1 + Math.pow(10, -eloDiff / 400));
+
+    // Style matchup adjustment
+    const styleData = matchups?.[fighterA.style]?.[fighterB.style];
+    let styleAdj = 0;
+    if (styleData && styleData.fights >= 5) {
+      styleAdj = (styleData.win_rate - 0.5) * 0.15;
+    }
+
+    // Win rate differential adjustment
+    const wrAdj = (fighterA.win_rate - fighterB.win_rate) * 0.1;
+
+    let probA = Math.max(0.05, Math.min(0.95, eloProb + styleAdj + wrAdj));
+
+    const winner = probA > 0.5 ? fighterA : fighterB;
+    const confidence = Math.max(probA, 1 - probA);
+
+    return { probA, probB: 1 - probA, winner, confidence };
+  }, [fighterA, fighterB, matchups]);
+
+  // Edge calculation
+  const edge = useMemo(() => {
+    if (!prediction || !oddsA || !oddsB) return null;
+
+    const parseAmerican = (odds) => {
+      const o = parseInt(odds);
+      if (isNaN(o)) return null;
+      return o > 0 ? 100 / (o + 100) : Math.abs(o) / (Math.abs(o) + 100);
+    };
+
+    const impliedA = parseAmerican(oddsA);
+    const impliedB = parseAmerican(oddsB);
+    if (!impliedA || !impliedB) return null;
+
+    // Remove vig
+    const total = impliedA + impliedB;
+    const fairA = impliedA / total;
+    const fairB = impliedB / total;
+
+    const edgeA = prediction.probA - fairA;
+    const edgeB = prediction.probB - fairB;
+
+    let pick = null, pickEdge = 0, units = 0, pickOdds = 0;
+
+    if (edgeA >= 0.05 && edgeA >= edgeB) {
+      pick = fighterA.name;
+      pickEdge = edgeA;
+      pickOdds = parseInt(oddsA);
+    } else if (edgeB >= 0.05) {
+      pick = fighterB.name;
+      pickEdge = edgeB;
+      pickOdds = parseInt(oddsB);
+    }
+
+    if (pick) {
+      if (pickEdge >= 0.20) units = 5;
+      else if (pickEdge >= 0.15) units = 3;
+      else if (pickEdge >= 0.10) units = 2;
+      else units = 1;
+    }
+
+    return {
+      impliedA: fairA, impliedB: fairB,
+      edgeA, edgeB, pick, pickEdge, units, pickOdds,
+      potentialProfit: pick ? (units * 10 * (pickOdds > 0 ? pickOdds/100 : 100/Math.abs(pickOdds))).toFixed(2) : 0
+    };
+  }, [prediction, oddsA, oddsB, fighterA, fighterB]);
+
+  if (fighters.length === 0) {
+    return React.createElement("div", {className:"app"},
+      React.createElement("h1", null, "UFC FIGHT PREDICTOR"),
+      React.createElement("div", {className:"loading"}, "Loading fighter data...")
+    );
+  }
+
+  return React.createElement("div", {className:"app"},
+    React.createElement("h1", null, "UFC FIGHT PREDICTOR"),
+    React.createElement("p", {className:"subtitle"}, "Elo ratings • Style matchups • Statistical analysis"),
+
+    // Search row
+    React.createElement("div", {className:"card"},
+      React.createElement("div", {className:"search-row"},
+        // Fighter A search
+        React.createElement("div", {className:"search-box"},
+          React.createElement("input", {
+            placeholder: "Search fighter...",
+            value: searchA,
+            onChange: e => { setSearchA(e.target.value); setShowDropA(true); },
+            onFocus: () => setShowDropA(true),
+            onBlur: () => setTimeout(() => setShowDropA(false), 200),
+          }),
+          showDropA && filteredA.length > 0 && React.createElement("div", {className:"dropdown"},
+            filteredA.map(f => React.createElement("div", {
+              key: f.name, className:"dropdown-item",
+              onMouseDown: () => { setFighterA(f); setSearchA(f.name); setShowDropA(false); }
+            }, f.name, React.createElement("span", {className:"elo"}, `Elo ${f.elo}`)))
+          )
+        ),
+
+        React.createElement("span", {className:"vs"}, "VS"),
+
+        // Fighter B search
+        React.createElement("div", {className:"search-box"},
+          React.createElement("input", {
+            placeholder: "Search fighter...",
+            value: searchB,
+            onChange: e => { setSearchB(e.target.value); setShowDropB(true); },
+            onFocus: () => setShowDropB(true),
+            onBlur: () => setTimeout(() => setShowDropB(false), 200),
+          }),
+          showDropB && filteredB.length > 0 && React.createElement("div", {className:"dropdown"},
+            filteredB.map(f => React.createElement("div", {
+              key: f.name, className:"dropdown-item",
+              onMouseDown: () => { setFighterB(f); setSearchB(f.name); setShowDropB(false); }
+            }, f.name, React.createElement("span", {className:"elo"}, `Elo ${f.elo}`)))
+          )
+        )
+      )
+    ),
+
+    // Prediction
+    prediction ? React.createElement("div", {className:"card prediction"},
+      React.createElement("div", {className:"fighters-row"},
+        React.createElement("div", {className:"fighter-card"},
+          React.createElement("div", {className:"fighter-name"}, fighterA.name),
+          React.createElement("div", {className:"fighter-style"}, fighterA.style),
+          React.createElement("div", {className:"fighter-elo"}, `Elo ${fighterA.elo} • ${fighterA.wins}W-${fighterA.fights - fighterA.wins}L`)
+        ),
+        React.createElement("span", {className:"vs"}, "VS"),
+        React.createElement("div", {className:"fighter-card"},
+          React.createElement("div", {className:"fighter-name"}, fighterB.name),
+          React.createElement("div", {className:"fighter-style"}, fighterB.style),
+          React.createElement("div", {className:"fighter-elo"}, `Elo ${fighterB.elo} • ${fighterB.wins}W-${fighterB.fights - fighterB.wins}L`)
+        )
+      ),
+      React.createElement("div", {className:"prob-bar"},
+        React.createElement("div", {className:"prob-fill-a", style:{width:`${prediction.probA*100}%`}}, `${(prediction.probA*100).toFixed(0)}%`),
+        React.createElement("div", {className:"prob-fill-b", style:{width:`${prediction.probB*100}%`}}, `${(prediction.probB*100).toFixed(0)}%`)
+      ),
+      React.createElement("div", {className:"winner-call"}, `${prediction.winner.name} WINS`),
+      React.createElement("div", {className:"winner-conf"}, `${(prediction.confidence*100).toFixed(1)}% confidence`),
+
+      // Stats grid
+      React.createElement("div", {className:"stats-grid"},
+        React.createElement("div", {className:"stat-card"},
+          React.createElement("div", {className:"stat-value"}, fighterA.elo.toFixed(0)),
+          React.createElement("div", {className:"stat-label"}, `${fighterA.name.split(" ").pop()} Elo`)
+        ),
+        React.createElement("div", {className:"stat-card"},
+          React.createElement("div", {className:"stat-value"}, fighterB.elo.toFixed(0)),
+          React.createElement("div", {className:"stat-label"}, `${fighterB.name.split(" ").pop()} Elo`)
+        ),
+        React.createElement("div", {className:"stat-card"},
+          React.createElement("div", {className:"stat-value"}, `${(fighterA.win_rate*100).toFixed(0)}%`),
+          React.createElement("div", {className:"stat-label"}, `${fighterA.name.split(" ").pop()} Win Rate`)
+        ),
+        React.createElement("div", {className:"stat-card"},
+          React.createElement("div", {className:"stat-value"}, `${(fighterB.win_rate*100).toFixed(0)}%`),
+          React.createElement("div", {className:"stat-label"}, `${fighterB.name.split(" ").pop()} Win Rate`)
+        )
+      ),
+
+      // Odds input + edge
+      React.createElement("div", {className:"edge-section"},
+        React.createElement("div", {className:"edge-title"}, "Betting Edge Calculator"),
+        React.createElement("div", {className:"odds-input"},
+          React.createElement("label", null, `${fighterA.name.split(" ").pop()} odds:`),
+          React.createElement("input", {placeholder:"-150", value:oddsA, onChange:e=>setOddsA(e.target.value)}),
+          React.createElement("label", null, `${fighterB.name.split(" ").pop()} odds:`),
+          React.createElement("input", {placeholder:"+130", value:oddsB, onChange:e=>setOddsB(e.target.value)})
+        ),
+
+        edge && React.createElement("div", {style:{marginTop:16}},
+          React.createElement("div", {className:"edge-row"},
+            React.createElement("span", {className:"edge-label"}, "Market implied"),
+            React.createElement("span", {className:"edge-value"}, `${(edge.impliedA*100).toFixed(1)}% / ${(edge.impliedB*100).toFixed(1)}%`)
+          ),
+          React.createElement("div", {className:"edge-row"},
+            React.createElement("span", {className:"edge-label"}, "Our model"),
+            React.createElement("span", {className:"edge-value"}, `${(prediction.probA*100).toFixed(1)}% / ${(prediction.probB*100).toFixed(1)}%`)
+          ),
+          React.createElement("div", {className:"edge-row"},
+            React.createElement("span", {className:"edge-label"}, "Edge on " + fighterA.name.split(" ").pop()),
+            React.createElement("span", {className:`edge-value ${edge.edgeA >= 0.05 ? 'positive' : 'negative'}`}, `${(edge.edgeA*100).toFixed(1)}%`)
+          ),
+          React.createElement("div", {className:"edge-row"},
+            React.createElement("span", {className:"edge-label"}, "Edge on " + fighterB.name.split(" ").pop()),
+            React.createElement("span", {className:`edge-value ${edge.edgeB >= 0.05 ? 'positive' : 'negative'}`}, `${(edge.edgeB*100).toFixed(1)}%`)
+          ),
+          React.createElement("div", {className:"edge-row", style:{paddingTop:12}},
+            React.createElement("span", {className:"edge-label", style:{fontWeight:600,color:'var(--text)'}}, "Recommendation"),
+            edge.pick
+              ? React.createElement("span", null,
+                  React.createElement("span", {className:`unit-badge unit-${edge.units}`}, `${edge.units}u on ${edge.pick.split(" ").pop()}`),
+                  React.createElement("span", {style:{marginLeft:8,color:'var(--green)',fontSize:'.85rem'}}, `+$${edge.potentialProfit} potential`)
+                )
+              : React.createElement("span", {className:"unit-badge no-bet"}, "NO BET — no edge")
+          )
+        )
+      )
+    ) : React.createElement("div", {className:"card empty-state"},
+      React.createElement("h3", null, "SELECT TWO FIGHTERS"),
+      React.createElement("p", null, "Search and select fighters above to see the prediction")
+    ),
+
+    // Model info
+    modelInfo && React.createElement("div", {className:"model-info"},
+      `${modelInfo.fighters_count} fighters • ${modelInfo.features_count} features • Last updated ${new Date(modelInfo.last_updated).toLocaleDateString()}`
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
